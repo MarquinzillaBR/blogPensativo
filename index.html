@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Reestruturação | Frankenstein</title>
+    <link rel="stylesheet" href="estilo.css">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <script>
+        // Configuração do Firebase (substitua com suas credenciais)
+        const firebaseConfig = {
+            apiKey: "COLE_AQUI_SUA_API_KEY",
+            authDomain: "diario-frankenstein.firebaseapp.com",
+            databaseURL: "https://diario-frankenstein-default-rtdb.firebaseio.com",
+            projectId: "diario-frankenstein",
+            storageBucket: "diario-frankenstein.appspot.com",
+            messagingSenderId: "946628502686",
+            appId: "COLE_AQUI_SEU_APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+    </script>
+</head>
+<body>
+    <div class="container">
+    <button id="open-menu" onclick="toggleSidebar()">☰ Menu</button>
+
+    <nav id="sidebar">
+        <div class="sidebar-header">
+            <h2 onclick="irParaInicio()" style="cursor:pointer">Capítulos</h2>
+            <button id="close-menu" onclick="toggleSidebar()">✕</button>
+        </div>
+        <ul id="lista-capitulos">
+            </ul>
+        
+        <button class="btn-contato-sidebar" onclick="abrirContato()" style="width:100%; background:none; border:1px solid #444; color:#888; padding:10px; margin-top:20px; cursor:pointer; position:relative;">
+    ✉ Contato <span id="ponto-notificacao" class="notificacao-dot"></span>
+</button>
+    </nav>
+    
+    <main id="conteudo">
+    <div id="corpo-texto">
+        <h1>Bem-vindo à Reconstrução</h1>
+        <p>Selecione um capítulo ao lado para ler sua história.</p>
+    </div>
+    <div class="nav-capitulos" id="nav-container" style="display:none;">
+        <button id="btn-prev">← Anterior</button>
+        <button id="btn-next">Próximo →</button>
+    </div>
+</main>
+
+<div id="modalContato" style="display:none; position:fixed; z-index:2000; left:0; top:0; width:100%; height:100%; background:rgba(0,0,0,0.9); align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; padding:30px; border:1px solid #e67e22; width:90%; max-width:400px; display:flex; flex-direction:column; gap:10px;">
+        <h2 style="color:#e67e22; margin:0;">Mensagem para o Vazio</h2>
+        <input type="text" id="c-nome" placeholder="Seu Nome" required style="background:#111; border:1px solid #333; color:white; padding:10px;">
+        <input type="text" id="c-titulo" placeholder="Assunto/Título" style="background:#111; border:1px solid #333; color:white; padding:10px;">
+        <textarea id="c-msg" placeholder="Sua descrição..." style="background:#111; border:1px solid #333; color:white; padding:10px; height:80px;"></textarea>
+        <div style="display:flex; gap:10px; justify-content:flex-end;">
+            <button onclick="fecharModal()" style="background:#333; color:white; border:none; padding:10px;">Cancelar</button>
+            <button onclick="enviarTudo()" style="background:#e67e22; color:white; border:none; padding:10px;">Enviar</button>
+        </div>
+    </div>
+</div>
+</div>
+
+    <script>
+        let capituloAtualIndex = -1;
+
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('active');
+        }
+
+        function irParaInicio() {
+            // Selecionamos a container principal para aplicar o efeito em tudo
+            const container = document.querySelector('.container');
+            
+            // Aplica a classe que criamos no CSS
+            container.classList.add('vazio');
+
+            // Espera 800ms (tempo da animação) e então recarrega
+            setTimeout(() => {
+                window.location.reload();
+            }, 800);
+        }
+
+        function abrirContato() {
+            const userId = localStorage.getItem('frank_user_id');
+            
+            if (userId) {
+                // Se ele já tem um ID, levamos ele direto para a página de chat
+                window.location.href = 'contato.html';
+            } else {
+                // Se é a primeira vez, abrimos o modal de identificação
+                document.getElementById('modalContato').style.display = 'flex';
+            }
+        }
+        
+        function fecharModal() { document.getElementById('modalContato').style.display = 'none'; }
+
+        function enviarTudo() {
+            const modal = document.querySelector('#modalContato > div');
+            const nome = document.getElementById('c-nome').value;
+            const titulo = document.getElementById('c-titulo').value;
+            const msg = document.getElementById('c-msg').value;
+            
+            if(!nome || !titulo || !msg) return alert("Preencha todos os campos.");
+
+            // Efeito visual da carta sendo jogada no vazio
+            modal.classList.add('carta-enviando');
+
+            // Gerar ID único para este leitor
+            let userId = localStorage.getItem('frank_user_id');
+            if (!userId) {
+                userId = 'user_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('frank_user_id', userId);
+            }
+
+            firebase.database().ref('mensagens/' + userId).push({
+                autor: 'leitor',
+                nome: nome || "Anônimo",
+                titulo: titulo,
+                texto: msg,
+                timestamp: Date.now(),
+                lida: false
+            }).then(() => {
+                setTimeout(() => {
+                    alert("Sua mensagem foi entregue às sombras.");
+                    fecharModal();
+                    if(modal) {
+                        modal.classList.remove('carta-enviando');
+                    }
+                    window.location.href = 'contato.html'; // Leva ele para o chat
+                }, 1200);
+            });
+        }
+
+        // Lógica para saber se VOCÊ respondeu
+        const userId = localStorage.getItem('frank_user_id');
+        if(userId) {
+            firebase.database().ref('mensagens/' + userId).on('value', snapshot => {
+                let temRespostaNaoLida = false;
+                snapshot.forEach(item => {
+                    const m = item.val();
+                    if(m.autor === 'voce' && m.lida !== true) {
+                        temRespostaNaoLida = true;
+                    }
+                });
+                
+                // Mostra o pontinho laranja se você respondeu
+                document.getElementById('ponto-notificacao').style.display = temRespostaNaoLida ? 'inline-block' : 'none';
+            });
+        }
+
+        function carregar(arquivo) {
+            const conteudo = document.getElementById('conteudo');
+            const corpoTexto = document.getElementById('corpo-texto');
+            
+            // Adicione esta verificação para fechar o menu automaticamente no celular
+            if (window.innerWidth <=768) {
+                document.getElementById('sidebar').classList.remove('active');
+            }
+            
+            // 1. Inicia a transição: esconde o conteúdo atual
+            conteudo.classList.add('escondido');
+
+            // 2. Espera o tempo da animação (0.4s) para trocar o texto
+            setTimeout(() => {
+                fetch('capitulos/' + arquivo)
+                    .then(res => res.text())
+                    .then(data => {
+                        corpoTexto.innerHTML = data;
+                        conteudo.scrollTop = 0;
+                        
+                        // Atualiza qual capítulo estamos para as setas funcionarem
+                        capituloAtualIndex = capitulos.findIndex(c => c.arquivo === arquivo);
+                        atualizarSetas();
+
+                        // 3. Finaliza a transição: mostra o novo conteúdo
+                        conteudo.classList.remove('escondido');
+                    })
+                    .catch(err => {
+                        corpoTexto.innerHTML = "<h1>Erro</h1><p>Arquivo não encontrado na pasta capitulos/.</p>";
+                        conteudo.classList.remove('escondido');
+                    });
+            }, 400);
+        }
+
+        function atualizarSetas() {
+            const nav = document.getElementById('nav-container');
+            const btnPrev = document.getElementById('btn-prev');
+            const btnNext = document.getElementById('btn-next');
+
+            nav.style.display = 'flex';
+            
+            // Configura botão Anterior
+            if (capituloAtualIndex > 0) {
+                btnPrev.style.visibility = 'visible';
+                btnPrev.onclick = () => carregar(capitulos[capituloAtualIndex - 1].arquivo);
+            } else {
+                btnPrev.style.visibility = 'hidden';
+            }
+
+            // Configura botão Próximo
+            if (capituloAtualIndex < capitulos.length - 1) {
+                btnNext.style.visibility = 'visible';
+                btnNext.onclick = () => carregar(capitulos[capituloAtualIndex + 1].arquivo);
+            } else {
+                btnNext.style.visibility = 'hidden';
+            }
+        }
+
+        // BASTA ADICIONAR O NOME DO ARQUIVO E O TÍTULO AQUI PARA ATUALIZAR O SITE
+        const capitulos = [
+            { arquivo: 'capitulo1.html', titulo: '1. O Surgimento' },
+            { arquivo: 'capitulo2.html', titulo: '2. A Redoma de Vidro' } // Adicione novos aqui
+        ];
+
+        const listaUL = document.getElementById('lista-capitulos');
+
+        // Gera o menu automaticamente
+        capitulos.forEach(cap => {
+            let li = document.createElement('li');
+            li.innerText = cap.titulo;
+            li.onclick = () => carregar(cap.arquivo);
+            listaUL.appendChild(li);
+        });
+    </script>
+</body>
+</html>

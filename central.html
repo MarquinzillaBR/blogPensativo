@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Central Frankenstein</title>
+    <style>
+        body { display: flex; height: 100vh; margin: 0; background: #121212; color: #eee; font-family: 'Consolas', 'Monaco', monospace; }
+        #lista-leitores { width: 300px; border-right: 1px solid #333; background: #181818; overflow-y: auto; }
+        .leitor-item { padding: 15px; border-bottom: 1px solid #222; cursor: pointer; }
+        .leitor-item:hover { background: #222; }
+        #chat-area { flex: 1; display: flex; flex-direction: column; }
+        #mensagens { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .balao { padding: 10px; border-radius: 5px; max-width: 70%; }
+        .leitor { align-self: flex-start; background: #333; }
+        .voce { align-self: flex-end; background: #e67e22; color: white; }
+        .input-box { padding: 20px; border-top: 1px solid #333; display: flex; gap: 10px; }
+        input { flex: 1; background: #111; border: 1px solid #444; color: white; padding: 10px; }
+
+        /* Menu Flutuante Mestre */
+        .menu-mestre { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+        .btn-mestre-flutuante {
+            width: 60px; height: 60px; border-radius: 50%; background: #e67e22;
+            border: none; color: white; font-size: 24px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.3s;
+        }
+        .btn-mestre-flutuante:hover { transform: scale(1.1) rotate(90deg); }
+        .opcoes-mestre {
+            display: none; flex-direction: column; gap: 10px;
+            position: absolute; bottom: 75px; right: 0;
+        }
+        .opcoes-mestre a {
+            background: #1a1a1a; border: 1px solid #e67e22; color: white;
+            padding: 12px 20px; text-decoration: none; border-radius: 5px;
+            font-size: 0.9rem; white-space: nowrap; animation: entrada 0.3s ease-out;
+        }
+        @keyframes entrada { from { opacity: 0; transform: translateY(10px); } }
+    </style>
+</head>
+<body>
+
+<div id="lista-leitores"></div>
+<div id="chat-area">
+    <div id="mensagens">Selecione um leitor...</div>
+    <div class="input-box">
+        <input type="text" id="resp" placeholder="Responder...">
+        <button onclick="enviarResposta()">Enviar</button>
+        <button onclick="excluirConversa()" style="background:#c0392b; border-color:#c0392b; margin-left:10px;">Excluir Conversa</button>
+    </div>
+</div>
+
+<!-- Menu Flutuante Mestre -->
+<div class="menu-mestre">
+    <button class="btn-mestre-flutuante" onclick="toggleMenuMestre()">⚙️</button>
+    <div id="opcoesMestre" class="opcoes-mestre">
+        <a href="https://SEU-USUARIO.github.io/REPOSITORIO/index.html" target="_blank">🏠 Ver Site Online</a>
+        <a href="escritor.html">✍️ Abrir Escritor</a>
+        <a href="central.html">💬 Abrir Central</a>
+    </div>
+</div>
+
+<!-- Modal de Exclusão -->
+<div id="modalExcluir" class="modal-contato" style="display:none; position:fixed; background:rgba(0,0,0,0.9); width:100%; height:100%; top:0; left:0; z-index:10000; align-items:center; justify-content:center;">
+    <div style="background:#1a1a1a; padding:30px; border:1px solid #c0392b; text-align:center;">
+        <p>Deseja apagar todos os rastros desta conversa?</p>
+        <button onclick="confirmarExclusao()" style="background:#c0392b; color:white; border:none; padding:10px 20px; cursor:pointer;">Sim, incinerar</button>
+        <button onclick="fecharModalExcluir()" style="background:#333; color:white; border:none; padding:10px 20px; cursor:pointer; margin-left:10px;">Cancelar</button>
+    </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+    // USE SUA CONFIG AQUI
+    const firebaseConfig = {
+        apiKey: "COLE_AQUI_SUA_API_KEY", 
+        authDomain: "diario-frankenstein.firebaseapp.com",
+        databaseURL: "https://diario-frankenstein-default-rtdb.firebaseio.com",
+        projectId: "diario-frankenstein",
+        storageBucket: "diario-frankenstein.appspot.com",
+        messagingSenderId: "946628502686",
+        appId: "COLE_AQUI_SEU_APP_ID"
+    };
+    
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    let atualUser = null;
+
+    // Carrega lista de quem mandou mensagem
+    db.ref('mensagens').on('value', snap => {
+        const list = document.getElementById('lista-leitores');
+        list.innerHTML = "";
+        snap.forEach(userSnapshot => {
+            // Pegamos a primeira mensagem para descobrir o nome que ele digitou
+            const mensagens = Object.values(userSnapshot.val());
+            const nomeLeitor = mensagens[0].nome || "Anônimo"; 
+            
+            const div = document.createElement('div');
+            div.className = 'leitor-item';
+            div.innerHTML = `<strong>${nomeLeitor}</strong><br><small>${userSnapshot.key}</small>`;
+            div.onclick = () => abrirChat(userSnapshot.key);
+            list.appendChild(div);
+        });
+    });
+
+    function abrirChat(id) {
+        atualUser = id;
+        db.ref('mensagens/' + id).on('value', snap => {
+            const box = document.getElementById('mensagens');
+            box.innerHTML = "";
+            
+            snap.forEach(m => {
+                const val = m.val();
+                const div = document.createElement('div');
+                div.className = 'balao ' + val.autor;
+                
+                // Identidade A (Anônimo/Leitor) e M (Mestre/Frankenstein)
+                const letra = val.autor === 'leitor' ? 'A' : 'M';
+                const cor = val.autor === 'leitor' ? '#eee' : '#e67e22';
+                
+                // Conteúdo da mensagem
+                const conteudo = val.nome ? `<b>${val.nome}:</b> ${val.titulo ? '<br><small>' + val.titulo + '</small><br>' : ''}${val.texto || val.conteudo}` :
+                                 val.titulo ? `<b>L:</b> <small>${val.titulo}</small><br>${val.texto}` :
+                                 `<b>${letra}:</b> ${val.texto || val.conteudo}`;
+                
+                div.innerHTML = conteudo;
+                box.appendChild(div);
+            });
+        });
+    }
+
+    function enviarResposta() {
+        const t = document.getElementById('resp').value;
+        if(!t || !atualUser) return;
+        
+        db.ref('mensagens/' + atualUser).push({
+            autor: 'voce',
+            texto: t,
+            timestamp: Date.now()
+        });
+        
+        document.getElementById('resp').value = "";
+    }
+
+    function excluirConversa() {
+        if (!atualUser) return;
+        document.getElementById('modalExcluir').style.display = 'flex';
+    }
+
+    function confirmarExclusao() {
+        if (!atualUser) return;
+        db.ref('mensagens/' + atualUser).remove().then(() => {
+            alert("Conversa eliminada.");
+            fecharModalExcluir();
+            location.reload(); // Recarrega para limpar a tela
+        });
+    }
+
+    function fecharModalExcluir() {
+        document.getElementById('modalExcluir').style.display = 'none';
+    }
+
+    function toggleMenuMestre() {
+        const m = document.getElementById('opcoesMestre');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+    }
+</script>
+</body>
+</html>

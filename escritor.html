@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Painel do Escritor | Reestruturação</title>
+    <style>
+        :root { --laranja: #e67e22; --dark: #1a1a1a; --border: #444; }
+        body { font-family: 'Consolas', 'Monaco', monospace; background: var(--dark); color: #eee; padding: 20px; }
+        .editor-container { max-width: 1000px; margin: 0 auto; }
+        
+        /* Toolbar */
+        .toolbar { background: #333; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; gap: 8px; flex-wrap: wrap; border: 1px solid var(--border); align-items: center;}
+        .divisor-v { width: 1px; height: 25px; background: var(--border); margin: 0 5px; }
+
+        /* Botões */
+        button { 
+            cursor: pointer; padding: 8px 12px; border: none; border-radius: 4px; 
+            background: #444; color: white; font-weight: bold; transition: 0.2s;
+        }
+        button:hover { background: var(--laranja); }
+        .btn-main { background: var(--laranja); }
+        .btn-ajuda-quadrado { background: #555; width: 40px; height: 40px; border-radius: 8px; font-size: 20px; }
+
+        /* Estilo dos Selects */
+        select { background: #444; color: white; border: none; padding: 8px; border-radius: 4px; cursor: pointer; }
+
+        textarea { 
+            width: 100%; height: 500px; background: #222; color: #ddd; 
+            border: 1px solid var(--border); padding: 20px; font-size: 16px; 
+            border-radius: 8px; resize: vertical; line-height: 1.6;
+        }
+
+        /* Modal */
+        .modal {
+            display: none; 
+            position: fixed; 
+            z-index: 1000; 
+            left: 0; top: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); 
+            backdrop-filter: blur(8px);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal-content {
+            background: #252525; 
+            padding: 30px; 
+            border: 1px solid var(--laranja);
+            width: 90%; 
+            max-width: 500px; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+        .modal-input { width: 90%; padding: 10px; margin-top: 15px; background: #111; border: 1px solid var(--laranja); color: #fff; }
+
+        input[type="text"] { width: 100%; padding: 12px; margin-bottom: 10px; background: #222; border: 1px solid var(--border); color: #fff; border-radius: 4px; box-sizing: border-box;}
+        .btn-baixar { background: #27ae60; width: 100%; padding: 15px; font-size: 18px; margin-top: 20px; border-radius: 8px;}
+
+        /* Menu Flutuante Mestre */
+        .menu-mestre { position: fixed; bottom: 30px; right: 30px; z-index: 9999; }
+        .btn-mestre-flutuante {
+            width: 60px; height: 60px; border-radius: 50%; background: var(--laranja);
+            border: none; color: white; font-size: 24px; cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5); transition: 0.3s;
+        }
+        .btn-mestre-flutuante:hover { transform: scale(1.1) rotate(90deg); }
+        .opcoes-mestre {
+            display: none; flex-direction: column; gap: 10px;
+            position: absolute; bottom: 75px; right: 0;
+        }
+        .opcoes-mestre a {
+            background: #1a1a1a; border: 1px solid var(--laranja); color: white;
+            padding: 12px 20px; text-decoration: none; border-radius: 5px;
+            font-size: 0.9rem; white-space: nowrap; animation: entrada 0.3s ease-out;
+        }
+        @keyframes entrada { from { opacity: 0; transform: translateY(10px); } }
+    </style>
+</head>
+<body>
+
+<div class="editor-container">
+    <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;">
+    <h1 style="margin: 0; font-size: 1.5rem;">Escritor Frankenstein</h1>
+    <button onclick="abrirAjuda()" style="width: 35px; height: 35px; padding: 0; border-radius: 4px; display: flex; align-items: center; justify-content: center;">❔</button>
+</div>
+    
+    <input type="text" id="titulo_cap" placeholder="Título do Capítulo (Ex: O Homem-Retalho)">
+    <input type="text" id="filename" placeholder="Nome do arquivo (Ex: capitulo2)">
+
+    <div class="toolbar">
+        <button onclick="addTag('h2')">Subtítulo</button>
+        <button onclick="addTag('hr')">Linha</button>
+        <div class="divisor-v"></div>
+        
+        <button onclick="addTag('b')" title="Negrito"><b>B</b></button>
+        <button onclick="addTag('i')" title="Itálico"><i>I</i></button>
+        <select id="fontColor" onchange="addTag('color')">
+            <option value="">Cor</option>
+            <option value="#e67e22">Laranja</option>
+            <option value="#e74c3c">Vermelho</option>
+            <option value="#3498db">Azul</option>
+            <option value="#f1c40f">Amarelo</option>
+        </select>
+        <select id="fontSize" onchange="addTag('size')">
+            <option value="">Tamanho</option>
+            <option value="1.5rem">Grande</option>
+            <option value="2rem">Enorme</option>
+            <option value="0.8rem">Pequeno</option>
+        </select>
+        
+        <div class="divisor-v"></div>
+        
+        <button onclick="addTag('box')" class="btn-main">Caixa</button>
+    </div>
+
+    <textarea id="editor_txt" placeholder="Escreva aqui... Se clicar em um botão sem selecionar texto, o modal abrirá para você digitar."></textarea>
+    
+    <button class="btn-baixar" onclick="gerarCapitulo()">BAIXAR CAPÍTULO PRONTO</button>
+</div>
+
+<!-- Menu Flutuante Mestre -->
+<div class="menu-mestre">
+    <button class="btn-mestre-flutuante" onclick="toggleMenuMestre()">⚙️</button>
+    <div id="opcoesMestre" class="opcoes-mestre">
+        <a href="https://SEU-USUARIO.github.io/REPOSITORIO/index.html" target="_blank">🏠 Ver Site Online</a>
+        <a href="escritor.html">✍️ Abrir Escritor</a>
+        <a href="central.html">💬 Abrir Central</a>
+    </div>
+</div>
+
+<div id="modalInput" class="modal">
+    <div class="modal-content">
+        <h3 id="modalTitle">O que deseja inserir?</h3>
+        <p id="modalDesc">Digite o texto abaixo:</p>
+        <textarea id="modalValue" class="modal-input" style="height: 100px;"></textarea>
+        <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: center;">
+            <button onclick="fecharModal()">Cancelar</button>
+            <button class="btn-main" onclick="confirmarModal()">Inserir</button>
+        </div>
+    </div>
+</div>
+
+<div id="modalAjuda" class="modal">
+    <div class="modal-content" style="text-align: left;">
+        <h2 style="color: var(--laranja)">❔ Como usar o Escritor</h2>
+        <p>1. <b>Modo Direto:</b> Escreva no campo grande. Para destacar algo, selecione com o mouse e clique no botão.</p>
+        <p>2. <b>Modo Rápido:</b> Se clicar no botão sem selecionar nada, uma janelinha abrirá para você digitar o conteúdo isolado.</p>
+        <p>3. <b>Estilos:</b> Use as cores e tamanhos para enfatizar emoções (ex: vermelho para raiva, azul para calma).</p>
+        <button class="btn-main" style="width: 100%" onclick="fecharAjuda()">Entendi</button>
+    </div>
+</div>
+
+<!-- Barra de Status -->
+<div id="status-barra" style="position:fixed; bottom:0; width:100%; background:#222; padding:5px; font-size:12px; color:var(--laranja); border-top:1px solid #444;">
+    Retalhos costurados: <span id="wordCount">0</span> | <span id="saveStatus">Documento pronto.</span>
+</div>
+
+<script>
+    let currentTag = '';
+    const area = document.getElementById('editor_txt');
+
+    function abrirAjuda() { document.getElementById('modalAjuda').style.display = 'block'; }
+    function fecharAjuda() { document.getElementById('modalAjuda').style.display = 'none'; }
+
+    function addTag(tipo) {
+        currentTag = tipo;
+        const start = area.selectionStart;
+        const end = area.selectionEnd;
+        const selected = area.value.substring(start, end);
+
+        // Se for Linha (hr), insere direto. Se não tiver seleção, abre o modal.
+        if (tipo === 'hr') {
+            processarTag('');
+        } else if (selected === "") {
+            document.getElementById('modalTitle').innerText = "Inserir " + tipo;
+            document.getElementById('modalValue').value = "";
+            document.getElementById('modalInput').style.display = 'flex';
+            document.getElementById('modalValue').focus();
+        } else {
+            processarTag(selected);
+        }
+    }
+
+    function fecharModal() { document.getElementById('modalInput').style.display = 'none'; }
+
+    function confirmarModal() {
+        const valor = document.getElementById('modalValue').value;
+        processarTag(valor);
+        fecharModal();
+    }
+
+    function processarTag(texto) {
+        const start = area.selectionStart;
+        const end = area.selectionEnd;
+        let final = "";
+
+        switch(currentTag) {
+            case 'h2': final = '<h2>' + texto + '</h2>'; break;
+            case 'b': final = '<b>' + texto + '</b>'; break;
+            case 'i': final = '<i>' + texto + '</i>'; break;
+            case 'color': 
+                const color = document.getElementById('fontColor').value;
+                final = '<span style="color:' + color + '">' + texto + '</span>'; 
+                break;
+            case 'size':
+                const size = document.getElementById('fontSize').value;
+                final = '<span style="font-size:' + size + '">' + texto + '</span>';
+                break;
+            case 'quote': final = '<section class="bloco-reflexao"><blockquote>' + texto + '</blockquote></section>'; break;
+            case 'box': final = '<div class="comentario-autor">' + texto + '</div>'; break;
+            case 'side': final = '<div class="pensamento-lateral"><em>' + texto + '</em></div>'; break;
+            case 'hr': final = '<hr>'; break;
+        }
+
+        // Esta técnica abaixo preserva o Ctrl+Z (Histórico do Navegador)
+        area.focus();
+        if (!document.execCommand('insertText', false, final)) {
+            // Fallback caso o navegador seja muito antigo
+            area.value = area.value.substring(0, start) + final + area.value.substring(end);
+        }
+        
+        // Reset selects
+        document.getElementById('fontColor').value = "";
+        document.getElementById('fontSize').value = "";
+    }
+
+    function gerarCapitulo() {
+        const titulo = document.getElementById('titulo_cap').value || "Sem Título";
+        const nomeArq = document.getElementById('filename').value || "capitulo";
+        const corpo = area.value.replace(/\n/g, '<br>');
+
+        const template = '<article class="diario"><header><h1>' + titulo + '</h1><p class="data-meta">Registro de Reestruturação</p></header>' + corpo + '</article>';
+
+        const blob = new Blob([template], { type: 'text/html' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = nomeArq + '.html';
+        link.click();
+    }
+
+    function toggleMenuMestre() {
+        const m = document.getElementById('opcoesMestre');
+        m.style.display = (m.style.display === 'flex') ? 'none' : 'flex';
+    }
+
+    // 1. Contador de Palavras e Auto-save
+    area.addEventListener('input', () => {
+        const texto = area.value.trim();
+        const palavras = texto ? texto.split(/\s+/).length : 0;
+        document.getElementById('wordCount').innerText = palavras;
+
+        // Salva rascunho automaticamente
+        localStorage.setItem('rascunho_frank', area.value);
+        document.getElementById('saveStatus').innerText = "Rascunho salvo no navegador...";
+    });
+
+    // 2. Recuperar rascunho ao abrir
+    window.onload = () => {
+        const salvo = localStorage.getItem('rascunho_frank');
+        if(salvo) {
+            area.value = salvo;
+            // Atualiza contador ao carregar
+            const palavras = salvo.trim() ? salvo.trim().split(/\s+/).length : 0;
+            document.getElementById('wordCount').innerText = palavras;
+        }
+    };
+</script>
+
+</body>
+</html>

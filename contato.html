@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Contato | Frankenstein</title>
+    <style>
+        body { 
+            background: #121212; 
+            color: #d1d1d1; 
+            font-family: 'Consolas', 'Monaco', monospace; 
+            margin: 0; 
+            display: flex; 
+            flex-direction: column; 
+            height: 100vh; 
+        }
+        
+        /* Cabeçalho */
+        .chat-header { 
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            padding: 20px;
+            background: #181818; 
+            border-bottom: 1px solid #333; 
+            text-align: center; 
+        }
+        .chat-header h2 { margin: 0; font-size: 1.2rem; color: #fff; }
+
+        /* Botão Voltar Estilizado */
+        .btn-voltar {
+            background: #1a1a1a;
+            border: 1px solid #444;
+            color: #888;
+            padding: 12px 25px;
+            cursor: pointer;
+            font-family: 'Consolas', monospace;
+            font-size: 1rem;
+            transition: 0.3s;
+            border-radius: 4px;
+        }
+        .btn-voltar:hover {
+            border-color: #e67e22;
+            color: #e67e22;
+            background: rgba(230, 126, 34, 0.05);
+        }
+
+        /* Janela de Chat */
+        #chat-window { 
+            flex: 1; 
+            overflow-y: auto; 
+            padding: 20px; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
+        
+        /* Balões Minimalistas */
+        .msg { 
+            max-width: 85%; 
+            padding: 10px 15px; 
+            border-radius: 4px; 
+            font-size: 0.9rem; 
+            line-height: 1.4;
+            position: relative;
+        }
+        .leitor { 
+            align-self: flex-end; 
+            background: #1a1a1a; 
+            border: 1px solid #444; 
+            color: #eee; 
+        }
+        .voce { 
+            align-self: flex-start; 
+            background: #1a1a1a; 
+            border: 1px solid #e67e22; 
+            color: #e67e22; 
+        }
+
+        /* Rodapé de Input */
+        .chat-input { 
+            background: #181818; 
+            padding: 15px; 
+            display: flex; 
+            gap: 10px; 
+            border-top: 1px solid #333; 
+        }
+        input { 
+            flex: 1; 
+            background: #121212; 
+            border: 1px solid #333; 
+            padding: 12px; 
+            color: white; 
+            font-family: inherit;
+        }
+        input:focus { outline: none; border-color: #e67e22; }
+        
+        button { 
+            background: none; 
+            border: 1px solid #e67e22; 
+            color: #e67e22; 
+            padding: 0 20px; 
+            cursor: pointer; 
+            transition: 0.3s;
+        }
+        button:hover { background: #e67e22; color: #fff; }
+    </style>
+</head>
+<body>
+
+<div class="chat-header">
+    <h2>Conversa com o Vazio</h2>
+    <div class="nav-contato">
+        <button onclick="window.location.href='index.html'" class="btn-voltar">← Voltar para os Retalhos</button>
+    </div>
+</div>
+
+<div id="chat-window">
+    </div>
+
+<div class="chat-input" id="chat-input-area">
+    <input type="text" id="msgInput" placeholder="Escreva um retalho de pensamento..." onkeypress="checarEnter(event)">
+    <button onclick="enviar()">Enviar</button>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+<script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+<script>
+    // Configurações do seu Firebase (COLE OS SEUS DADOS AQUI)
+    const firebaseConfig = {
+        apiKey: "COLE_AQUI_SUA_API_KEY", 
+        authDomain: "diario-frankenstein.firebaseapp.com",
+        databaseURL: "https://diario-frankenstein-default-rtdb.firebaseio.com",
+        projectId: "diario-frankenstein",
+        storageBucket: "diario-frankenstein.appspot.com",
+        messagingSenderId: "946628502686",
+        appId: "COLE_AQUI_SEU_APP_ID"
+    };
+    
+    // Inicializa o Firebase
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+
+    // Cria ou recupera o ID único deste navegador (Privacidade)
+    let userId = localStorage.getItem('frank_user_id');
+    if (!userId) {
+        userId = 'anon_' + Math.random().toString(36).substr(2, 9);
+        localStorage.setItem('frank_user_id', userId);
+    }
+
+    function enviar() {
+        const campo = document.getElementById('msgInput');
+        const texto = campo.value.trim();
+        
+        if(texto === "") return;
+
+        // Salva no banco de dados na pasta única do usuário
+        db.ref('mensagens/' + userId).push({
+            autor: 'leitor',
+            texto: texto,
+            timestamp: Date.now()
+        });
+
+        campo.value = "";
+    }
+
+    function checarEnter(e) {
+        if (e.key === 'Enter') enviar();
+    }
+
+    // Marcar mensagens como lidas quando você responde
+    db.ref('mensagens/' + userId).on('value', snapshot => {
+        snapshot.forEach(item => {
+            const m = item.val();
+            // Se a mensagem for do leitor e ainda não estiver lida, marca como lida
+            if(m.autor === 'leitor' && m.lida !== true) {
+                db.ref('mensagens/' + userId + '/' + item.key).update({ lida: true });
+            }
+        });
+    });
+
+    // Escuta o Banco de Dados e atualiza a tela automaticamente
+    db.ref('mensagens/' + userId).on('value', snapshot => {
+        const win = document.getElementById('chat-window');
+        const inputArea = document.getElementById('chat-input-area'); // Onde fica o campo de digitar
+        win.innerHTML = "";
+        
+        let ultimaMsgAutor = "";
+
+        snapshot.forEach(item => {
+            const m = item.val();
+            ultimaMsgAutor = m.autor; // Salva quem mandou a última
+
+            const div = document.createElement('div');
+            div.className = 'msg ' + (m.autor === 'leitor' ? 'leitor' : 'voce');
+            // Aqui resolvemos o UNDEFINED verificando todos os campos possíveis
+            const conteudo = m.titulo ? `<b>${m.nome || 'L'}:</b> ${m.titulo}<br>${m.texto}` : 
+                           m.texto ? `<b>${m.nome || 'L'}:</b> ${m.texto}` :
+                           m.conteudo ? `<b>${m.nome || 'L'}:</b> ${m.conteudo}` : '';
+            div.innerHTML = conteudo;
+            win.appendChild(div);
+        });
+
+        // TRAVA DE SPAM: Só mostra o campo de digitar se a última mensagem foi VOCÊ (autor: 'voce')
+        // Se a última foi o 'leitor', o campo some e aparece um aviso.
+        if (ultimaMsgAutor === 'leitor') {
+            inputArea.innerHTML = "<p style='color:#666; font-size:0.8rem;'>Aguardando o Frankenstein encontrar suas palavras nas sombras...</p>";
+        } else {
+            // Aqui você mantém o HTML original do input e botão de enviar
+            inputArea.innerHTML = `
+                <input type="text" id="msgInput" placeholder="Escreva um retalho de pensamento..." onkeypress="checarEnter(event)">
+                <button onclick="enviar()">Enviar</button>
+            `;
+        }
+        
+        // Rola para a última mensagem
+        win.scrollTop = win.scrollHeight;
+    });
+</script>
+
+</body>
+</html>

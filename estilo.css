@@ -1,0 +1,210 @@
+/* estilo.css - Minimalista Dark (Estilo Bloco de Notas) */
+body {
+    background: #121212; /* Fundo sólido, sem degradê */
+    color: #d1d1d1;
+    font-family: 'Consolas', 'Monaco', monospace; /* Fonte estilo código/bloco de notas */
+    margin: 0;
+    display: flex;
+    height: 100vh;
+}
+
+.container { display: flex; width: 100%; }
+
+/* Botão de abrir menu (escondido no PC) */
+#open-menu {
+    display: none;
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    z-index: 100;
+    background: #333;
+    border: 1px solid #555;
+    color: #d1d1d1;
+    padding: 10px;
+    border-radius: 4px;
+}
+
+/* Ajuste da Sidebar para ser móvel */
+#sidebar {
+    width: 250px;
+    background: #181818;
+    padding: 20px;
+    border-right: 1px solid #333;
+    transition: 0.3s; /* Animação ao abrir/fechar */
+}
+
+.sidebar-header { 
+    display: flex; 
+    justify-content: space-between; 
+    align-items: center; 
+}
+
+#close-menu { 
+    display: none; 
+    background: none; 
+    border: none; 
+    color: #d1d1d1; 
+    font-size: 20px; 
+}
+
+#sidebar h2 { 
+    color: #fff; 
+    border-bottom: 1px solid #333; 
+    font-size: 1.2rem; 
+    cursor: pointer;
+}
+
+#sidebar ul { list-style: none; padding: 0; }
+
+#sidebar li {
+    padding: 10px;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+#sidebar li:hover { 
+    background: #1a1a1a;
+    border-left: 2px solid #555;
+    padding-left: 8px;
+}
+
+#conteudo {
+    flex: 1;
+    padding: 60px;
+    overflow-y: auto;
+    background: #121212;
+    line-height: 1.6;
+    font-size: 1rem;
+    transition: opacity 0.4s ease-in-out;
+    opacity: 1;
+}
+
+/* Classe que será usada via JavaScript para esconder o texto */
+.escondido {
+    opacity: 0 !important;
+}
+
+/* Efeito de ser sugado para o vazio */
+.vazio {
+    transform: scale(0) rotate(15deg); /* Diminui até sumir e gira levemente */
+    opacity: 0;
+    filter: blur(20px) grayscale(100%); /* Desfoca e perde a cor enquanto some */
+    transition: all 0.8s cubic-bezier(0.6, -0.28, 0.735, 0.045); /* Movimento de 'puxão' */
+    pointer-events: none; /* Impede cliques durante a animação */
+}
+
+h1 { 
+    color: #fff; 
+    font-weight: normal;
+    margin-bottom: 10px;
+}
+
+h2 { 
+    color: #fff; 
+    font-weight: normal;
+    margin-top: 40px;
+    border-bottom: 1px solid #333;
+    padding-bottom: 5px;
+}
+
+/* Caixas de texto minimalistas - sem degradê */
+.bloco-reflexao, .destaque-vivido {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    padding: 20px;
+    margin: 20px 0;
+}
+
+.comentario-autor {
+    border-left: 3px solid #555;
+    padding-left: 15px;
+    margin: 20px 0;
+    font-style: italic;
+    color: #888;
+}
+
+.pensamento-lateral {
+    text-align: right;
+    border-right: 3px solid #555;
+    padding-right: 15px;
+    margin: 20px 0;
+    color: #888;
+    font-style: italic;
+}
+
+.conclusao-capitulo {
+    border-top: 1px solid #333;
+    padding-top: 20px;
+    margin-top: 40px;
+}
+
+/* Setas de Navegação */
+.nav-capitulos {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 50px;
+    padding: 20px 0;
+    border-top: 1px solid #333;
+}
+
+.nav-capitulos button {
+    background: none;
+    border: 1px solid #444;
+    color: #888;
+    padding: 10px 20px;
+    cursor: pointer;
+    font-family: 'Consolas', 'Monaco', monospace;
+    transition: border-color 0.2s, color 0.2s;
+}
+
+.nav-capitulos button:hover {
+    border-color: #e67e22;
+    color: #e67e22;
+}
+
+/* CONFIGURAÇÃO PARA CELULAR */
+@media (max-width: 768px) {
+    #open-menu { display: block; }
+
+    #sidebar {
+        position: fixed;
+        left: -270px;
+        top: 0;
+        height: 100%;
+        z-index: 1000;
+    }
+
+    #sidebar.active {
+        left: 0;
+    }
+
+    #close-menu { display: block; }
+
+    #conteudo {
+        padding: 80px 15px 20px 15px;
+        font-size: 0.9rem;
+    }
+
+    /* Garante que imagens e vídeos dentro dos capítulos não quebrem o layout no celular */
+    #conteudo img, #conteudo video {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* Melhora o toque no menu para dedos no celular */
+    #sidebar li {
+        padding: 15px;
+        border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+}
+
+/* Animação da Carta caindo no Vazio */
+@keyframes jogarCarta {
+    0% { transform: scale(1) translateY(0) rotate(0); opacity: 1; }
+    20% { transform: scale(1.1) translateY(-20px) rotate(-5deg); }
+    100% { transform: scale(0) translateY(500px) rotate(20deg); opacity: 0; }
+}
+
+.carta-enviando {
+    animation: jogarCarta 1.5s ease-in forwards;
+}
