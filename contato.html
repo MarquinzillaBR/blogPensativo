@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Contato | Frankenstein</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
         body { 
             background: #121212; 
@@ -140,9 +141,9 @@
 <body>
 
 <div class="chat-header">
-    <h2>Conversa com o Vazio</h2>
+    <h2><i class="fa-solid fa-ghost"></i> Conversa com o Vazio</h2>
     <div class="nav-contato">
-        <button onclick="window.location.href='index.html'" class="btn-voltar">← Voltar para os Retalhos</button>
+        <button onclick="window.location.href='index.html'" class="btn-voltar"><i class="fa-solid fa-arrow-left-long"></i> Voltar para os Retalhos</button>
     </div>
 </div>
 
@@ -151,7 +152,7 @@
 
 <div class="chat-input" id="chat-input-area">
     <input type="text" id="msgInput" placeholder="Escreva um retalho de pensamento..." onkeypress="checarEnter(event)">
-    <button onclick="enviar()">Enviar</button>
+    <button onclick="enviar()"><i class="fa-solid fa-paper-plane"></i> Enviar</button>
 </div>
 
 <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>

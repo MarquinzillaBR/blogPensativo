@@ -208,3 +208,17 @@ h2 {
 .carta-enviando {
     animation: jogarCarta 1.5s ease-in forwards;
 }
+
+/* Estilizando os ícones do FontAwesome */
+.fa-solid, .fa-brands, .fa-regular {
+    margin-right: 10px; /* Espaço entre o ícone e o texto */
+    color: #e67e22;    /* A cor laranja que você já usa no tema */
+    font-size: 0.9em;   /* Ajusta o tamanho para não ficar gigante */
+    vertical-align: middle;
+}
+
+/* Efeito de brilho sutil nos ícones ao passar o mouse na sidebar */
+#sidebar li:hover .fa-solid {
+    text-shadow: 0 0 8px rgba(230, 126, 34, 0.6);
+    color: #fff;
+}

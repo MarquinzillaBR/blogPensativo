@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <title>Reestruturação | Frankenstein</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="estilo.css">
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
@@ -34,13 +35,13 @@
             </ul>
         
         <button class="btn-contato-sidebar" onclick="abrirContato()" style="width:100%; background:none; border:1px solid #444; color:#888; padding:10px; margin-top:20px; cursor:pointer; position:relative;">
-    ✉ Contato <span id="ponto-notificacao" class="notificacao-dot"></span>
+    <i class="fa-solid fa-envelope"></i> Contato <span id="ponto-notificacao" class="notificacao-dot"></span>
 </button>
     </nav>
     
     <main id="conteudo">
     <div id="corpo-texto">
-        <h1>Bem-vindo à Reconstrução</h1>
+        <h1><i class="fa-solid fa-house-chimney"></i> Bem-vindo à Reconstrução</h1>
         <p>Selecione um capítulo ao lado para ler sua história.</p>
     </div>
     <div class="nav-capitulos" id="nav-container" style="display:none;">
@@ -246,7 +247,8 @@
         // Gera o menu automaticamente
         capitulos.forEach(cap => {
             let li = document.createElement('li');
-            li.innerText = cap.titulo;
+            // Ícone de pergaminho temático
+            li.innerHTML = `<i class="fa-solid fa-scroll"></i> ${cap.titulo}`;
             li.onclick = () => carregar(cap.arquivo);
             listaUL.appendChild(li);
         });
